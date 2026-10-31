@@ -15,7 +15,7 @@ from collections import defaultdict
 # PATH AND IMPORT CONFIGURATION
 # ============================================================
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -73,7 +73,7 @@ SAM_SOURCE = "sam-3.1"
 #
 # Set this to the clip's starting timestamp in the original video
 # if Boro needs timestamps in the original video timeline.
-VIDEO_TIME_OFFSET_SECONDS = 0.0
+VIDEO_TIME_OFFSET_SECONDS = 5.8
 
 # Expected frame indexes are zero-based.
 EXPECTED_FRAME_INDEXES = set(range(EXPECTED_FRAMES))
