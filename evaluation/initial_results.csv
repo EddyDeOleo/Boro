@@ -1,0 +1,5 @@
+episode_id,ground_truth,prediction,agrees,notes
+000000,success,success,true,Clean successful placement
+000037,failure,failure,true,Slip or drop; object remains outside box
+000011,success,success,true,Successful placement after recovery
+000025,failure,success,false,Object ends inside box after a release classified as failure

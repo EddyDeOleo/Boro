@@ -1,0 +1,113 @@
+{
+  "experiment": "episode_000025_dual_tracking_v1",
+  "model": "sam-3.1",
+  "objects": {
+    "1": {
+      "name": "red_cube",
+      "bbox": [
+        775,
+        744,
+        817,
+        788
+      ]
+    },
+    "2": {
+      "name": "gripper",
+      "bbox": [
+        700,
+        660,
+        910,
+        745
+      ]
+    }
+  },
+  "initial_frame": 0,
+  "video_resolution": [
+    1280,
+    960
+  ],
+  "prompt": "<0f>1<|box;x1=775;y1=744;x2=817;y2=788;w=1280;h=960|>,2<|box;x1=700;y1=660;x2=910;y2=745;w=1280;h=960|>",
+  "uploaded_file_id": "file-1451978383541850",
+  "response_id": "resp_6ae40be3f4f8d2473f4c4add",
+  "timestamp_utc": "2026-10-30T03:15:52.625015+00:00",
+  "stream_completed": true,
+  "event_count": 59,
+  "event_types": [
+    "response.created",
+    "response.in_progress",
+    "response.output_item.added",
+    "response.content_part.added",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.delta",
+    "response.output_text.done",
+    "response.content_part.done",
+    "response.output_item.done",
+    "response.completed"
+  ],
+  "response_characters": 21128,
+  "empty_text_output": false,
+  "usage": {
+    "input_tokens": 0,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 0,
+    "video_frames_processed": 51
+  },
+  "events_file": "evaluation\\sam_episode_000025_dual_events.jsonl",
+  "raw_output_file": "evaluation\\sam_episode_000025_dual_raw.txt",
+  "response_file": "evaluation\\sam_episode_000025_dual_response.json"
+}

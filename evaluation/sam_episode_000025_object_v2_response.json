@@ -1,0 +1,51 @@
+{
+  "id": "resp_6ae3f96c4ee8ae9716f2425b",
+  "created_at": 1793325420.0,
+  "metadata": {
+    "include_confidence": "true",
+    "mask_encoding": "one_bit",
+    "propagation_direction": "forward"
+  },
+  "model": "sam-3.1",
+  "object": "response",
+  "output": [
+    {
+      "id": "msg_443601fb-84e8-4cb8-8383-caae8e18bfa4",
+      "content": [
+        {
+          "annotations": [],
+          "text": "<15f>1<|box;x1=610;y1=792;x2=647;y2=832;w=1280;h=960;c=0.69921875|><|mask;x=0;y=0;c=0.69921875;data=41,38,!!!!!KF]p(%:hg'o8myQOs$&juRC[oIb1bFf7e*xl65%!6TaAsh!!|>\n<16f>1<|box;x1=608;y1=792;x2=648;y2=832;w=1280;h=960;c=0.68245929479599|><|mask;x=0;y=0;c=0.68245929479599;data=41,41,!!!!!SFFrmdGKrD'dl{g?@TRA)/QRFDU5rBe5G7)kA26ei:F(o9B?Q#)%gM{&!!|>\n<17f>1<|box;x1=609;y1=791;x2=647;y2=834;w=1280;h=960;c=0.6354326605796814|><|mask;x=0;y=0;c=0.6354326605796814;data=44,39,!!!!!QFFbBSXq:-QP$Bl8Rwx+^Bh_{='k8XUa9Kolpn2(1B84q0_4455DbXT|>\n<18f>1<|box;x1=608;y1=792;x2=647;y2=833;w=1280;h=960;c=0.39477643370628357|><|mask;x=0;y=0;c=0.39477643370628357;data=42,40,!!!!!OFFty7G+#=qHv9YM51/ogAq(NW-gUkjC7!PVWKXDt74/@xt=-SC!!|>\n<19f>1<|box;x1=607;y1=791;x2=647;y2=832;w=1280;h=960;c=0.260536789894104|><|mask;x=0;y=0;c=0.260536789894104;data=42,41,!!!!!NF-pKbMYNW&?]P5zkANP0/-w8r*=$IFU^u42UgLkV$ei/8MrKvH|>\n<20f>1<|box;x1=608;y1=791;x2=647;y2=832;w=1280;h=960;c=0.03444477170705795|><|mask;x=0;y=0;c=0.03444477170705795;data=42,40,!!!!!OF0%LK*xHp)@4VG/p&WAUoQ)*LEMhwAD8zTLXc`:[YKTlZ7hnv#!!|>\n<24f>1<|box;x1=608;y1=790;x2=646;y2=832;w=1280;h=960;c=0.06211968883872032|><|mask;x=0;y=0;c=0.06211968883872032;data=43,39,!!!!!REm)dG^bYog$qG5mCsB]n!nQm1?EyKi)3dO:`j*yiBHJ/SB@VtcDh`WE|>\n<25f>1<|box;x1=606;y1=790;x2=647;y2=832;w=1280;h=960;c=0.09087036550045013|><|mask;x=0;y=0;c=0.09087036550045013;data=43,42,!!!!!VER:5YE`uEUab_=:7/P3L/udU@H%n'J9vI2{P^5]W6(q_!JL5^9_!*NA!#ubD|>\n",
+          "type": "output_text",
+          "logprobs": []
+        }
+      ],
+      "role": "assistant",
+      "status": "completed",
+      "type": "message"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "temperature": 1.0,
+  "tool_choice": "auto",
+  "tools": [],
+  "top_p": 1.0,
+  "background": false,
+  "completed_at": 1793325423.0,
+  "service_tier": "auto",
+  "status": "completed",
+  "top_logprobs": 0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 0,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 0,
+    "video_frames_processed": 50
+  },
+  "store": true
+}

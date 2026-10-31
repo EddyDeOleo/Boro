@@ -1,0 +1,27 @@
+{
+    "region_id": "target_zone_01",
+    "name": "Target Zone",
+    "region_type": "TARGET_ZONE",
+    "coordinate_system": "pixel",
+    "frame_width": 1280,
+    "frame_height": 960,
+    "reference_frame": 0,
+    "polygon": [
+        [
+            320,
+            721
+        ],
+        [
+            488,
+            744
+        ],
+        [
+            434,
+            847
+        ],
+        [
+            241,
+            819
+        ]
+    ]
+}

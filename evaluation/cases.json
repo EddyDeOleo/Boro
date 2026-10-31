@@ -1,0 +1,14 @@
+{
+  "000025": {
+    "ground_truth": "failure",
+    "muse_spark_baseline": "success",
+    "suspected_failure": "slip_drop",
+    "critical_interval_seconds": [6.2, 7.2],
+    "events_to_verify": [
+      "object_grip_separation",
+      "object_descending_after_separation",
+      "object_landing_outside_target"
+    ],
+    "status": "pending_visual_verification"
+  }
+}

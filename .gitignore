@@ -1,4 +1,51 @@
-.env
-.venv/
+
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Operating system
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Generated evaluation artifacts
+evaluation/raw/
+evaluation/temp/
+evaluation/cache/
+
+# Videos and large media
 videos/
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Temporary files
+*.tmp
+*.bak
