@@ -1,13 +1,15 @@
 
 """Run the Boro verification pipeline on episode 000025."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
 
 from scripts.analysis import analyze_dual_masks as analysis
 
@@ -21,6 +23,10 @@ from src.models.verification_criteria import (
     VerificationCriteria,
 )
 from src.verification.verification_pipeline import VerificationPipeline
+from src.verification.execution_report_builder import (
+    ExecutionReportBuilder,
+)
+from src.presentation.report_presenter import ReportPresenter
 
 
 def build_task_roles() -> TaskRoles:
@@ -97,7 +103,10 @@ def print_pipeline_result(result) -> None:
 
     print("\nContext:")
     print(f"  FPS: {result.context.fps}")
-    print(f"  Frames: {result.context.frame_start}-{result.context.frame_end}")
+    print(
+        f"  Frames: "
+        f"{result.context.frame_start}-{result.context.frame_end}"
+    )
     print(f"  Offset: {result.context.time_offset_seconds:.3f}s")
     print(f"  Coverage scope: {result.context.coverage_scope.value}")
     print(
@@ -150,8 +159,74 @@ def print_pipeline_result(result) -> None:
     print("\n==========================================")
 
 
+def print_presentation_report(report) -> None:
+    """Print the presentation-ready execution report."""
+
+    print("\n========== BORO PRESENTATION REPORT ==========")
+
+    overview = report.overview
+
+    print("\nOverview:")
+    print(f"  Verdict: {overview.verdict}")
+    print(f"  Summary: {overview.summary}")
+    print(f"  Coverage scope: {overview.coverage_scope}")
+    print(
+        f"  Covers entire context: "
+        f"{overview.covers_entire_context}"
+    )
+    print(f"  FPS: {overview.fps}")
+    print(f"  Context frames: {overview.context_frame_count}")
+    print(f"  Observed frames: {overview.observed_frame_count}")
+    print(f"  Start time: {overview.start_time_seconds:.3f}s")
+    print(f"  End time: {overview.end_time_seconds:.3f}s")
+    print(f"  Duration: {overview.duration_seconds:.3f}s")
+
+    print("\nCriteria:")
+
+    for criterion in report.criteria:
+        print(f"\n  Criterion: {criterion.criterion_id}")
+        print(f"    Requirement: {criterion.requirement}")
+        print(f"    Status: {criterion.status}")
+        print(f"    Mandatory: {criterion.is_mandatory}")
+        print(f"    Event IDs: {criterion.event_ids}")
+        print(f"    Evidence IDs: {criterion.evidence_ids}")
+
+    print(f"\nTimeline events: {len(report.timeline)}")
+
+    for event in report.timeline:
+        print(f"\n  Event: {event.event_type}")
+        print(f"    ID: {event.event_id}")
+        print(f"    Status: {event.status.value}")
+        print(f"    Confidence: {event.confidence}")
+        print(f"    Evidence IDs: {event.evidence_ids}")
+
+    print(f"\nEvidence items: {len(report.evidence)}")
+
+    for evidence in report.evidence:
+        print(f"\n  Evidence: {evidence.evidence_id}")
+        print(f"    Type: {evidence.evidence_type}")
+        print(f"    Description: {evidence.description}")
+        print(
+            f"    Time: {evidence.timestamp_start_seconds:.3f}s"
+            f"-{evidence.timestamp_end_seconds:.3f}s"
+        )
+        print(f"    Entity IDs: {evidence.entity_ids}")
+        print(f"    Observation IDs: {evidence.observation_ids}")
+        print(f"    Metrics: {dict(evidence.metrics)}")
+
+    print("\nLimitations:")
+
+    if report.limitations:
+        for limitation in report.limitations:
+            print(f"  - {limitation}")
+    else:
+        print("  No limitations recorded.")
+
+    print("\n==============================================")
+
+
 def main() -> None:
-    """Load the episode, execute Boro, and print its result."""
+    """Load the episode, execute Boro, and generate its report."""
 
     print("Loading SAM response...")
 
@@ -213,7 +288,7 @@ def main() -> None:
 
     pipeline = VerificationPipeline()
 
-    result = pipeline.run(
+    pipeline_result = pipeline.run(
         object_metrics=entity_metric_records,
         relative_metrics=relative_metric_records,
         relationship_metrics=relationship_metric_records,
@@ -232,19 +307,30 @@ def main() -> None:
         source=analysis.SAM_SOURCE,
     )
 
-    if len(result.entity_observations) != (
+    if len(pipeline_result.entity_observations) != (
         analysis.EXPECTED_FRAMES * len(analysis.OBJECT_IDS)
     ):
         raise RuntimeError("Unexpected entity observation count.")
 
-    if len(result.spatial_relationships) != analysis.EXPECTED_FRAMES:
+    if len(pipeline_result.spatial_relationships) != analysis.EXPECTED_FRAMES:
         raise RuntimeError("Unexpected spatial relationship count.")
 
-    if len(result.region_observations) != analysis.EXPECTED_FRAMES:
+    if len(pipeline_result.region_observations) != analysis.EXPECTED_FRAMES:
         raise RuntimeError("Unexpected region observation count.")
 
-    print_pipeline_result(result)
+    print_pipeline_result(pipeline_result)
+
+    print("\nBuilding execution report...")
+
+    execution_report = ExecutionReportBuilder().build(pipeline_result)
+
+    print("Presenting execution report...")
+
+    presentation_report = ReportPresenter().present(execution_report)
+
+    print_presentation_report(presentation_report)
 
 
 if __name__ == "__main__":
     main()
+
