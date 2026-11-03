@@ -884,3 +884,57 @@ def test_required_criterion_can_be_satisfied_without_region_constraint(
         result.criterion_results[0].status
         == CriterionResultStatus.SATISFIED
     )
+
+@pytest.mark.parametrize(
+    "requirement",
+    [
+        CriterionRequirement.REQUIRED,
+        CriterionRequirement.FORBIDDEN,
+    ],
+)
+def test_incomplete_detection_prevents_reliable_absence_conclusion(
+    engine: VerdictEngine,
+    task_roles: TaskRoles,
+    complete_context: ObservationContext,
+    requirement: CriterionRequirement,
+) -> None:
+    """An incomplete detection must not be ignored when evaluating absence."""
+
+    criterion = make_criterion(
+        requirement=requirement,
+        required_evidence_types=("STABLE_IN_REGION",),
+    )
+
+    incomplete_detection = make_event(
+        event_id="event_incomplete_detection",
+        status=EventStatus.DETECTED,
+        evidence=(
+            make_evidence(
+                evidence_id="evidence_motion",
+                evidence_type="OBJECT_MOTION",
+            ),
+        ),
+    )
+
+    observable_absence = make_observable_absence_event(
+        event_id="event_observable_absence",
+    )
+
+    result = engine.evaluate(
+        criteria=(criterion,),
+        events=(incomplete_detection, observable_absence),
+        task_roles=task_roles,
+        context=complete_context,
+    )
+
+    criterion_result = result.criterion_results[0]
+
+    assert (
+        criterion_result.status
+        == CriterionResultStatus.INSUFFICIENT_EVIDENCE
+    )
+    assert result.verdict == VerificationVerdict.INSUFFICIENT_EVIDENCE
+    assert criterion_result.event_ids == (
+        "event_incomplete_detection",
+        "event_observable_absence",
+    )

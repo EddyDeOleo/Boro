@@ -1,3 +1,4 @@
+
 """Evaluate verification criteria against detected temporal events."""
 
 from collections.abc import Sequence
@@ -154,6 +155,13 @@ class VerdictEngine:
             and self._has_required_evidence(event, criterion)
         )
 
+        incomplete_detected_matches = tuple(
+            event
+            for event in structural_matches
+            if event.status == EventStatus.DETECTED
+            and not self._has_required_evidence(event, criterion)
+        )
+
         not_detected_matches = tuple(
             event
             for event in structural_matches
@@ -170,6 +178,7 @@ class VerdictEngine:
             return self._evaluate_required_criterion(
                 criterion=criterion,
                 detected_matches=detected_matches,
+                incomplete_detected_matches=incomplete_detected_matches,
                 not_detected_matches=not_detected_matches,
                 not_observable_matches=not_observable_matches,
                 structural_matches=structural_matches,
@@ -179,6 +188,7 @@ class VerdictEngine:
         return self._evaluate_forbidden_criterion(
             criterion=criterion,
             detected_matches=detected_matches,
+            incomplete_detected_matches=incomplete_detected_matches,
             not_detected_matches=not_detected_matches,
             not_observable_matches=not_observable_matches,
             structural_matches=structural_matches,
@@ -241,6 +251,7 @@ class VerdictEngine:
         self,
         criterion: VerificationCriteria,
         detected_matches: tuple[TemporalEvent, ...],
+        incomplete_detected_matches: tuple[TemporalEvent, ...],
         not_detected_matches: tuple[TemporalEvent, ...],
         not_observable_matches: tuple[TemporalEvent, ...],
         structural_matches: tuple[TemporalEvent, ...],
@@ -257,6 +268,18 @@ class VerdictEngine:
                     "entity, region, and evidence requirements."
                 ),
                 events=detected_matches,
+            )
+
+        if incomplete_detected_matches:
+            return self._build_criterion_result(
+                criterion=criterion,
+                status=CriterionResultStatus.INSUFFICIENT_EVIDENCE,
+                explanation=(
+                    "A matching event was detected, but its evidence "
+                    "does not satisfy the configured requirements. "
+                    "Its occurrence or absence cannot be established."
+                ),
+                events=structural_matches,
             )
 
         reliable_absence = tuple(
@@ -314,6 +337,7 @@ class VerdictEngine:
         self,
         criterion: VerificationCriteria,
         detected_matches: tuple[TemporalEvent, ...],
+        incomplete_detected_matches: tuple[TemporalEvent, ...],
         not_detected_matches: tuple[TemporalEvent, ...],
         not_observable_matches: tuple[TemporalEvent, ...],
         structural_matches: tuple[TemporalEvent, ...],
@@ -330,6 +354,18 @@ class VerdictEngine:
                     "entity, region, and evidence requirements."
                 ),
                 events=detected_matches,
+            )
+
+        if incomplete_detected_matches:
+            return self._build_criterion_result(
+                criterion=criterion,
+                status=CriterionResultStatus.INSUFFICIENT_EVIDENCE,
+                explanation=(
+                    "A matching event was detected, but its evidence "
+                    "does not satisfy the configured requirements. "
+                    "Its occurrence or absence cannot be established."
+                ),
+                events=structural_matches,
             )
 
         reliable_absence = tuple(
