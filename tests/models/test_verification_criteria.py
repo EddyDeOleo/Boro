@@ -183,3 +183,54 @@ def test_criterion_is_immutable():
 
     with pytest.raises(AttributeError):
         criterion.criterion_id = "modified"
+
+def test_creates_criterion_with_one_of_evidence_types():
+    criterion = create_criteria(
+        required_evidence_types=(),
+        one_of_evidence_types=(
+            "MASK_DISTANCE_SEPARATION",
+            "RELATIVE_CENTROID_SEPARATION",
+        ),
+    )
+
+    assert criterion.one_of_evidence_types == (
+        "MASK_DISTANCE_SEPARATION",
+        "RELATIVE_CENTROID_SEPARATION",
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        ["MASK_DISTANCE_SEPARATION"],
+        "MASK_DISTANCE_SEPARATION",
+        None,
+    ],
+)
+def test_rejects_non_tuple_one_of_evidence_types(value):
+    with pytest.raises(ValueError):
+        create_criteria(one_of_evidence_types=value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        ("",),
+        ("   ",),
+        (123,),
+        (None,),
+    ],
+)
+def test_rejects_invalid_one_of_evidence_types(value):
+    with pytest.raises(ValueError):
+        create_criteria(one_of_evidence_types=value)
+
+
+def test_rejects_duplicate_one_of_evidence_types():
+    with pytest.raises(ValueError):
+        create_criteria(
+            one_of_evidence_types=(
+                "MASK_DISTANCE_SEPARATION",
+                "MASK_DISTANCE_SEPARATION",
+            )
+        )

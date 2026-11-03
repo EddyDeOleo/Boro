@@ -132,7 +132,7 @@ class MuseSparkClient:
         self,
         client: Any,
         model: str = MUSE_SPARK_MODEL,
-        max_output_tokens: int = 2500,
+        max_output_tokens: int = 4000,
     ) -> None:
         if not hasattr(client, "responses"):
             raise TypeError("client must expose a responses interface.")
@@ -161,7 +161,7 @@ class MuseSparkClient:
         cls,
         model: str = MUSE_SPARK_MODEL,
         timeout_seconds: float = 60.0,
-        max_output_tokens: int = 2500,
+        max_output_tokens: int = 4000,
     ) -> "MuseSparkClient":
         """Build the client using the Meta Model API environment key."""
 

@@ -1,0 +1,221 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --background: #0c0e0b;
+  --surface: #121510;
+  --surface-soft: #171a14;
+  --surface-hover: #1d2119;
+  --border: #2a2e26;
+  --border-subtle: #20241d;
+  --foreground: #f0f0e9;
+  --muted: #929588;
+  --muted-dim: #666d60;
+  --accent: #b8f36b;
+  --accent-hover: #c9ff85;
+  --danger: #ed8178;
+  --warning: #e8bd70;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  color: var(--background);
+  background: var(--accent);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.font-mono {
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.main-content {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 54px 64px 80px;
+}
+
+.eyebrow {
+  color: var(--muted-dim);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.section-rule {
+  height: 1px;
+  background: var(--border);
+}
+
+.editorial-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  transition: color 160ms ease;
+}
+
+.editorial-link:hover {
+  color: var(--accent);
+}
+
+.primary-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 18px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #11140e;
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.primary-action:hover {
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+}
+
+.secondary-action {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 550;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.secondary-action:hover {
+  border-color: #555d4d;
+  background: var(--surface-hover);
+}
+
+.sidebar-link {
+  position: relative;
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 550;
+  transition:
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.sidebar-link:hover {
+  background: var(--surface-hover);
+  color: var(--foreground);
+}
+
+.sidebar-link[data-active="true"] {
+  background: #1a2014;
+  color: var(--accent);
+}
+
+.sidebar-link[data-active="true"]::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 0;
+  width: 2px;
+  background: var(--accent);
+  content: "";
+}
+
+@media (max-width: 1023px) {
+  .main-content {
+    padding: 40px 32px 64px;
+  }
+}
+
+@media (max-width: 639px) {
+  .main-content {
+    padding: 32px 20px 52px;
+  }
+}
+
+.primary-action,
+.secondary-action {
+  border-radius: 6px;
+}
+
+.topbar-action {
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #11140e !important;
+}
+
+.topbar-action:hover {
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+  color: #11140e !important;
+}

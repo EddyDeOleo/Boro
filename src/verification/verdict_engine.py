@@ -237,15 +237,25 @@ class VerdictEngine:
         event: TemporalEvent,
         criterion: VerificationCriteria,
     ) -> bool:
-        """Check whether a detected event contains required evidence types."""
+        """Check mandatory and alternative evidence requirements."""
 
         available_types = {
             evidence.evidence_type for evidence in event.evidence
         }
 
-        return set(criterion.required_evidence_types).issubset(
-            available_types
+        required_types_satisfied = set(
+            criterion.required_evidence_types
+        ).issubset(available_types)
+
+        one_of_types_satisfied = (
+            not criterion.one_of_evidence_types
+            or bool(
+                set(criterion.one_of_evidence_types)
+                & available_types
+            )
         )
+
+        return required_types_satisfied and one_of_types_satisfied
 
     def _evaluate_required_criterion(
         self,

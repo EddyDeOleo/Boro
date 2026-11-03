@@ -114,7 +114,7 @@ def _require_list(value: Any, field_name: str) -> list[Any]:
 
 
 def _extract_json_payload(raw_response: str) -> Any:
-    """Extract a JSON payload from a model response."""
+    """Extract and validate the complete root JSON object."""
 
     response = raw_response.strip()
 
@@ -123,7 +123,6 @@ def _extract_json_payload(raw_response: str) -> Any:
             "Muse Spark returned an empty response."
         )
 
-    # Remove a Markdown code fence when the entire response uses one.
     fenced_match = re.fullmatch(
         r"```(?:json)?\s*(.*?)\s*```",
         response,
@@ -133,46 +132,59 @@ def _extract_json_payload(raw_response: str) -> Any:
     if fenced_match:
         response = fenced_match.group(1).strip()
 
-    # First, attempt to parse the complete response.
+    # Locate the beginning of the root JSON object.
+    start_index = response.find("{")
+
+    if start_index == -1:
+        raise TaskInterpretationError(
+            "Muse Spark response does not contain a JSON object."
+        )
+
+    json_text = response[start_index:]
+
     try:
-        return json.loads(response)
-    except json.JSONDecodeError as original_error:
-        # If the response contains surrounding text, try to extract
-        # the first complete JSON object.
-        decoder = json.JSONDecoder()
+        payload, end_index = json.JSONDecoder().raw_decode(json_text)
 
-        for match in re.finditer(r"\{", response):
-            start_index = match.start()
-
-            try:
-                payload, _ = decoder.raw_decode(
-                    response[start_index:]
-                )
-
-                if isinstance(payload, dict):
-                    return payload
-
-            except json.JSONDecodeError:
-                continue
-
+    except json.JSONDecodeError as error:
         preview = response[:1000].replace("\n", "\\n")
 
-        logger.warning(
-            "Muse Spark returned invalid JSON. "
+        logger.error(
+            "Muse Spark returned incomplete or invalid JSON. "
             "Line: %s, column: %s, position: %s. "
             "Response preview: %s",
-            original_error.lineno,
-            original_error.colno,
-            original_error.pos,
+            error.lineno,
+            error.colno,
+            error.pos,
             preview,
         )
 
         raise TaskInterpretationError(
-            "Muse Spark returned invalid JSON. "
-            f"Parser error at line {original_error.lineno}, "
-            f"column {original_error.colno}. "
-            f"Response preview: {preview}"
-        ) from original_error
+            "Muse Spark returned incomplete or invalid JSON. "
+            f"Parser error at line {error.lineno}, "
+            f"column {error.colno}."
+        ) from error
+
+    if not isinstance(payload, dict):
+        raise TaskInterpretationError(
+            "Muse Spark response root must be a JSON object."
+        )
+
+    trailing_content = json_text[end_index:].strip()
+
+    if trailing_content:
+        raise TaskInterpretationError(
+            "Muse Spark returned unexpected content after the JSON object."
+        )
+
+    if not _TOP_LEVEL_FIELDS.issuperset(payload.keys()):
+        unknown_fields = set(payload.keys()) - _TOP_LEVEL_FIELDS
+
+        raise TaskInterpretationError(
+            "Muse Spark returned unsupported root fields: "
+            f"{sorted(unknown_fields)}."
+        )
+
+    return payload
 
 
 class MuseSparkTaskInterpreter:
@@ -209,6 +221,7 @@ class MuseSparkTaskInterpreter:
             )
 
         payload = _extract_json_payload(raw_response)
+
 
         try:
             return self._parse_task_definition(payload)

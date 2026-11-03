@@ -30,6 +30,7 @@ class VerificationCriteria:
     region_role: str | None = None
 
     required_evidence_types: tuple[str, ...] = ()
+    one_of_evidence_types: tuple[str, ...] = ()
     is_mandatory: bool = True
 
     def __post_init__(self) -> None:
@@ -56,6 +57,11 @@ class VerificationCriteria:
         if not isinstance(self.required_evidence_types, tuple):
             raise ValueError(
                 "required_evidence_types must be a tuple."
+            )
+
+        if not isinstance(self.one_of_evidence_types, tuple):
+            raise ValueError(
+                "one_of_evidence_types must be a tuple."
             )
 
         if any(
@@ -93,3 +99,19 @@ class VerificationCriteria:
             raise ValueError(
                 "required_evidence_types cannot contain duplicates."
             )
+
+        if any(
+            not isinstance(evidence_type, str) or not evidence_type.strip()
+            for evidence_type in self.one_of_evidence_types
+        ):
+            raise ValueError(
+                "Every one-of evidence type must be a non-empty string."
+            )
+
+        if len(set(self.one_of_evidence_types)) != len(
+            self.one_of_evidence_types
+        ):
+            raise ValueError(
+                "one_of_evidence_types cannot contain duplicates."
+            )
+

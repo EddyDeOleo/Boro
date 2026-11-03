@@ -1,14 +1,15 @@
-
-"""REST endpoint for integrated robotic execution."""
+"""REST endpoints for integrated robotic execution and report retrieval."""
 
 from __future__ import annotations
 
 import json
 import logging
 
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
+from uuid import UUID, uuid4
 
 from fastapi import (
     APIRouter,
@@ -48,6 +49,9 @@ router = APIRouter(
     tags=["robotic-executions"],
 )
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+REPORTS_DIRECTORY = PROJECT_ROOT / "data" / "reports"
+
 MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024
 UPLOAD_CHUNK_SIZE = 1024 * 1024
 
@@ -80,6 +84,56 @@ def get_robotic_execution_service(
         )
 
     return service
+
+
+def _persist_report(
+    report: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist a serialized report and return its metadata."""
+
+    report_id = str(uuid4())
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    record = {
+        "report_id": report_id,
+        "created_at": created_at,
+        **report,
+    }
+
+    REPORTS_DIRECTORY.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    destination = REPORTS_DIRECTORY / f"{report_id}.json"
+    temporary_destination = REPORTS_DIRECTORY / f"{report_id}.tmp"
+
+    try:
+        temporary_destination.write_text(
+            json.dumps(
+                record,
+                ensure_ascii=False,
+                indent=2,
+                allow_nan=False,
+            ),
+            encoding="utf-8",
+        )
+
+        temporary_destination.replace(destination)
+
+    except (OSError, TypeError, ValueError) as error:
+        temporary_destination.unlink(missing_ok=True)
+
+        logger.exception(
+            "Failed to persist robotic execution report."
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="The execution report could not be saved.",
+        ) from error
+
+    return record
 
 
 async def _save_upload_to_temporary_file(
@@ -173,6 +227,7 @@ def _parse_request_data(
             ),
         ) from error
 
+
 @router.post(
     "/robotic-executions",
     status_code=status.HTTP_200_OK,
@@ -193,7 +248,7 @@ async def create_robotic_execution(
         get_robotic_execution_service
     ),
 ) -> dict[str, Any]:
-    """Execute the complete robotic verification workflow."""
+    """Execute verification, persist the report, and return its identifier."""
 
     temporary_video_path: Path | None = None
 
@@ -217,7 +272,12 @@ async def create_robotic_execution(
             **domain_config,
         )
 
-        return report
+        if not isinstance(report, dict):
+            raise TypeError(
+                "The robotic execution service returned an invalid report."
+            )
+
+        return _persist_report(report)
 
     except HTTPException:
         raise
@@ -259,3 +319,122 @@ async def create_robotic_execution(
             temporary_video_path.unlink(missing_ok=True)
 
         await video.close()
+
+@router.get(
+    "/robotic-executions",
+    status_code=status.HTTP_200_OK,
+    summary="List stored robotic execution reports",
+)
+async def list_robotic_executions() -> dict[str, Any]:
+    """List stored execution reports using their summary metadata."""
+
+    if not REPORTS_DIRECTORY.exists():
+        return {
+            "items": [],
+            "total": 0,
+        }
+
+    items: list[dict[str, Any]] = []
+
+    for report_path in REPORTS_DIRECTORY.glob("*.json"):
+        try:
+            record = json.loads(
+                report_path.read_text(encoding="utf-8")
+            )
+
+            if not isinstance(record, dict):
+                continue
+
+            report = record.get("report", record)
+
+            if not isinstance(report, dict):
+                continue
+
+            overview = report.get("overview", {})
+
+            if not isinstance(overview, dict):
+                overview = {}
+
+            report_id = record.get("report_id")
+            created_at = record.get("created_at")
+
+            if not report_id or not created_at:
+                continue
+
+            items.append({
+                "report_id": report_id,
+                "created_at": created_at,
+                "verdict": overview.get("verdict"),
+                "summary": overview.get("summary"),
+                "duration_seconds": overview.get(
+                    "duration_seconds"
+                ),
+                "coverage_scope": overview.get(
+                    "coverage_scope"
+                ),
+            })
+
+        except (
+            OSError,
+            json.JSONDecodeError,
+            KeyError,
+            AttributeError,
+        ):
+            logger.exception(
+                "Failed to read execution report %s.",
+                report_path.name,
+            )
+
+    items.sort(
+        key=lambda item: item["created_at"],
+        reverse=True,
+    )
+
+    return {
+        "items": items,
+        "total": len(items),
+    }
+
+@router.get(
+    "/robotic-executions/{report_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve a stored robotic execution report",
+)
+async def get_robotic_execution_report(
+    report_id: str,
+) -> dict[str, Any]:
+    """Retrieve a previously persisted execution report."""
+
+    try:
+        validated_id = UUID(report_id)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The requested execution report was not found.",
+        ) from error
+
+    report_path = (
+        REPORTS_DIRECTORY / f"{validated_id}.json"
+    )
+
+    if not report_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The requested execution report was not found.",
+        )
+
+    try:
+        return json.loads(
+            report_path.read_text(encoding="utf-8")
+        )
+
+    except (OSError, json.JSONDecodeError) as error:
+        logger.exception(
+            "Failed to read stored execution report %s.",
+            validated_id,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="The stored execution report could not be read.",
+        ) from error

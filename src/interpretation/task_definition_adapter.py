@@ -15,9 +15,16 @@ from src.models.verification_criteria import (
 EVENT_REQUIRED_EVIDENCE_TYPES = {
     "OBJECT_MOVING": ("CENTROID_DISPLACEMENT",),
     "OBJECT_MOVING_WITH_EFFECTOR": ("COORDINATED_ENTITY_MOTION",),
-    "RELATIVE_SEPARATION": ("RELATIVE_CENTROID_SEPARATION",),
+    "RELATIVE_SEPARATION": (),
     "REGION_ENTRY": ("ENTITY_ENTERED_REGION",),
     "STABLE_PLACEMENT": ("STABLE_IN_REGION",),
+}
+
+EVENT_ONE_OF_EVIDENCE_TYPES = {
+    "RELATIVE_SEPARATION": (
+        "MASK_DISTANCE_SEPARATION",
+        "RELATIVE_CENTROID_SEPARATION",
+    ),
 }
 
 
@@ -205,6 +212,11 @@ class TaskDefinitionAdapter:
                     f"{criterion.event_type}."
                 )
 
+            one_of_evidence_types = EVENT_ONE_OF_EVIDENCE_TYPES.get(
+                criterion.event_type,
+                (),
+            )
+
             adapted_criteria.append(
                 VerificationCriteria(
                     criterion_id=criterion.criterion_id,
@@ -215,6 +227,7 @@ class TaskDefinitionAdapter:
                     region_role=criterion.region_role,
                     required_evidence_types=evidence_types,
                     is_mandatory=criterion.is_mandatory,
+                    one_of_evidence_types=one_of_evidence_types,
                 )
             )
 

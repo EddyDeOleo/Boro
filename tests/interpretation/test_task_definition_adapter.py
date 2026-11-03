@@ -4,6 +4,7 @@
 import pytest
 
 from src.interpretation.task_definition_adapter import (
+    EVENT_ONE_OF_EVIDENCE_TYPES,
     EVENT_REQUIRED_EVIDENCE_TYPES,
     AdaptedTaskDefinition,
     TaskDefinitionAdapter,
@@ -142,6 +143,13 @@ def test_adapt_maps_event_evidence_types():
             ]
         )
 
+        assert adapted_criterion.one_of_evidence_types == (
+            EVENT_ONE_OF_EVIDENCE_TYPES.get(
+                adapted_criterion.event_type,
+                (),
+            )
+        )
+
 
 @pytest.mark.parametrize(
     ("event_type", "expected_evidence"),
@@ -151,10 +159,7 @@ def test_adapt_maps_event_evidence_types():
             "OBJECT_MOVING_WITH_EFFECTOR",
             ("COORDINATED_ENTITY_MOTION",),
         ),
-        (
-            "RELATIVE_SEPARATION",
-            ("RELATIVE_CENTROID_SEPARATION",),
-        ),
+        ("RELATIVE_SEPARATION", ()),
         ("REGION_ENTRY", ("ENTITY_ENTERED_REGION",)),
         ("STABLE_PLACEMENT", ("STABLE_IN_REGION",)),
     ],
@@ -164,6 +169,46 @@ def test_evidence_mapping_matches_event_detector(
     expected_evidence,
 ):
     assert EVENT_REQUIRED_EVIDENCE_TYPES[event_type] == expected_evidence
+
+
+def test_separation_mapping_accepts_alternative_evidence_types():
+    assert EVENT_ONE_OF_EVIDENCE_TYPES["RELATIVE_SEPARATION"] == (
+        "MASK_DISTANCE_SEPARATION",
+        "RELATIVE_CENTROID_SEPARATION",
+    )
+
+
+def test_adapt_maps_separation_evidence_as_alternatives():
+    task_definition = TaskDefinition(
+        task_summary="Move the object and release it.",
+        entities=(make_object(), make_effector()),
+        regions=(),
+        criteria=(
+            TaskCriterion(
+                criterion_id="object_separates",
+                description="The object separates from the gripper.",
+                event_type="RELATIVE_SEPARATION",
+                entity_roles=("object", "effector"),
+            ),
+        ),
+    )
+
+    result = make_adapter().adapt(
+        task_definition,
+        entity_id_map={
+            "object": "entity-1",
+            "effector": "entity-2",
+        },
+        region_id_map={},
+    )
+
+    criterion = result.criteria[0]
+
+    assert criterion.required_evidence_types == ()
+    assert criterion.one_of_evidence_types == (
+        "MASK_DISTANCE_SEPARATION",
+        "RELATIVE_CENTROID_SEPARATION",
+    )
 
 
 def test_adapt_uses_required_criterion_requirement():

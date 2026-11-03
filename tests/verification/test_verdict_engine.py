@@ -1,3 +1,4 @@
+
 """Tests for the VerdictEngine."""
 
 import pytest
@@ -67,6 +68,7 @@ def make_evidence(
     evidence_type: str = "OBJECT_MOTION",
     frame_start: int = 0,
     frame_end: int = 9,
+    entity_ids: tuple[str, ...] = ("cube_01",),
 ) -> Evidence:
     return Evidence(
         evidence_id=evidence_id,
@@ -75,7 +77,7 @@ def make_evidence(
         frame_start=frame_start,
         frame_end=frame_end,
         observation_ids=(),
-        entity_ids=("cube_01",),
+        entity_ids=entity_ids,
         metrics={},
         limitations=(),
     )
@@ -122,6 +124,7 @@ def make_criterion(
     region_role: str | None = None,
     required_evidence_types: tuple[str, ...] = (),
     is_mandatory: bool = True,
+    one_of_evidence_types: tuple[str, ...] = (),
 ) -> VerificationCriteria:
     return VerificationCriteria(
         criterion_id=criterion_id,
@@ -132,6 +135,7 @@ def make_criterion(
         region_role=region_role,
         required_evidence_types=required_evidence_types,
         is_mandatory=is_mandatory,
+        one_of_evidence_types=one_of_evidence_types,
     )
 
 
@@ -148,6 +152,7 @@ def make_observable_absence_event(
         evidence_type="OBSERVABILITY_CONFIRMED",
         frame_start=frame_start,
         frame_end=frame_end,
+        entity_ids=entity_ids,
     )
 
     return make_event(
@@ -885,6 +890,7 @@ def test_required_criterion_can_be_satisfied_without_region_constraint(
         == CriterionResultStatus.SATISFIED
     )
 
+
 @pytest.mark.parametrize(
     "requirement",
     [
@@ -938,3 +944,89 @@ def test_incomplete_detection_prevents_reliable_absence_conclusion(
         "event_incomplete_detection",
         "event_observable_absence",
     )
+
+
+@pytest.mark.parametrize(
+    "evidence_type",
+    [
+        "MASK_DISTANCE_SEPARATION",
+        "RELATIVE_CENTROID_SEPARATION",
+    ],
+)
+def test_separation_criterion_accepts_either_valid_measurement(
+    engine: VerdictEngine,
+    task_roles: TaskRoles,
+    complete_context: ObservationContext,
+    evidence_type: str,
+) -> None:
+    criterion = make_criterion(
+        event_type="RELATIVE_SEPARATION",
+        entity_roles=("target_object", "effector"),
+        one_of_evidence_types=(
+            "MASK_DISTANCE_SEPARATION",
+            "RELATIVE_CENTROID_SEPARATION",
+        ),
+    )
+
+    event = make_event(
+        event_type="RELATIVE_SEPARATION",
+        entity_ids=("cube_01", "gripper_01"),
+        evidence=(
+            make_evidence(
+                evidence_type=evidence_type,
+                entity_ids=("cube_01", "gripper_01"),
+            ),
+        ),
+    )
+
+    result = engine.evaluate(
+        criteria=(criterion,),
+        events=(event,),
+        task_roles=task_roles,
+        context=complete_context,
+    )
+
+    assert (
+        result.criterion_results[0].status
+        == CriterionResultStatus.SATISFIED
+    )
+    assert result.criterion_results[0].event_ids == ("event_01",)
+
+
+def test_separation_criterion_rejects_unrelated_evidence(
+    engine: VerdictEngine,
+    task_roles: TaskRoles,
+    complete_context: ObservationContext,
+) -> None:
+    criterion = make_criterion(
+        event_type="RELATIVE_SEPARATION",
+        entity_roles=("target_object", "effector"),
+        one_of_evidence_types=(
+            "MASK_DISTANCE_SEPARATION",
+            "RELATIVE_CENTROID_SEPARATION",
+        ),
+    )
+
+    event = make_event(
+        event_type="RELATIVE_SEPARATION",
+        entity_ids=("cube_01", "gripper_01"),
+        evidence=(
+            make_evidence(
+                evidence_type="CENTROID_DISPLACEMENT",
+                entity_ids=("cube_01", "gripper_01"),
+            ),
+        ),
+    )
+
+    result = engine.evaluate(
+        criteria=(criterion,),
+        events=(event,),
+        task_roles=task_roles,
+        context=complete_context,
+    )
+
+    assert (
+        result.criterion_results[0].status
+        == CriterionResultStatus.INSUFFICIENT_EVIDENCE
+    )
+    assert result.verdict == VerificationVerdict.INSUFFICIENT_EVIDENCE

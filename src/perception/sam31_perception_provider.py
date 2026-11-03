@@ -1,7 +1,10 @@
+
 """SAM 3.1 implementation of the provider-independent perception contract."""
 
 from __future__ import annotations
 
+import logging
+from collections import Counter
 from itertools import combinations
 from math import isclose, isfinite
 from pathlib import Path
@@ -24,8 +27,6 @@ from src.models.region import RegionDefinition
 from src.models.video_metadata import VideoMetadata
 from src.perception.mask_analyzer import (
     MaskMetrics,
-    MaskRelationshipMetrics,
-    RelativeMetrics,
     calculate_mask_metrics,
     calculate_mask_relationship_metrics,
     calculate_relative_metrics,
@@ -33,6 +34,9 @@ from src.perception.mask_analyzer import (
 from src.perception.perception_provider import PerceptionProvider
 from src.perception.sam_mask_reconstructor import reconstruct_frame_mask
 from src.perception.video_processor import VideoProcessor
+
+
+logger = logging.getLogger(__name__)
 
 
 class SAM31PerceptionError(RuntimeError):
@@ -156,6 +160,13 @@ class Sam31PerceptionProvider(PerceptionProvider):
                 object_id_map=config.entity_id_map,
                 regions=normalized_regions,
             )
+
+        self._log_perception_diagnostics(
+            masks_by_frame=masks_by_frame,
+            entity_id_map=config.entity_id_map,
+            spatial_relationships=spatial_relationships,
+            include_spatial_relationships=config.include_spatial_relationships,
+        )
 
         try:
             return PerceptionResult(
@@ -399,6 +410,73 @@ class Sam31PerceptionProvider(PerceptionProvider):
             )
 
         return masks_by_frame, confidences
+
+    @staticmethod
+    def _log_perception_diagnostics(
+        masks_by_frame: dict[int, dict[str, NDArray[np.uint8]]],
+        entity_id_map: dict[str, str] | object,
+        spatial_relationships: Sequence[object],
+        include_spatial_relationships: bool,
+    ) -> None:
+        """Log tracking coverage and spatial relationship diagnostics."""
+
+        configured_ids = sorted(entity_id_map)
+
+        mask_counts = Counter(
+            object_id
+            for frame_masks in masks_by_frame.values()
+            for object_id in frame_masks
+        )
+
+        simultaneous_counts = {
+            f"{object_a}:{object_b}": 0
+            for object_a, object_b in combinations(configured_ids, 2)
+        }
+
+        for frame_masks in masks_by_frame.values():
+            present_ids = set(frame_masks)
+
+            for object_a, object_b in combinations(configured_ids, 2):
+                if object_a in present_ids and object_b in present_ids:
+                    simultaneous_counts[f"{object_a}:{object_b}"] += 1
+
+        semantic_mapping = {
+            provider_id: entity_id_map[provider_id]
+            for provider_id in configured_ids
+        }
+
+        logger.warning(
+            "SAM 3.1 perception diagnostics | "
+            "semantic_mapping=%s | "
+            "mask_counts=%s | "
+            "frames_with_masks=%d | "
+            "simultaneous_pair_frames=%s | "
+            "spatial_relationships=%d | "
+            "spatial_relationships_enabled=%s",
+            semantic_mapping,
+            dict(mask_counts),
+            len(masks_by_frame),
+            simultaneous_counts,
+            len(spatial_relationships),
+            include_spatial_relationships,
+        )
+
+        missing_ids = [
+            provider_id
+            for provider_id in configured_ids
+            if mask_counts[provider_id] == 0
+        ]
+
+        if missing_ids:
+            logger.warning(
+                "SAM 3.1 returned no masks for configured object IDs: %s",
+                missing_ids,
+            )
+
+        if include_spatial_relationships and not spatial_relationships:
+            logger.warning(
+                "SAM 3.1 produced no spatial relationships."
+            )
 
     @staticmethod
     def _calculate_object_metrics(
