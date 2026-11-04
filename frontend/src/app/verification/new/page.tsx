@@ -106,8 +106,6 @@ type Target = {
   role: string;
 };
 
-const REPORT_STORAGE_KEY = "boro.latest-report-id";
-
 async function readResponse(
   response: Response,
 ): Promise<Record<string, unknown>> {
@@ -230,65 +228,8 @@ export default function NewVerificationPage() {
   const [reportId, setReportId] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
-  const [isRestoringReport, setIsRestoringReport] = useState(true);
 
   const [coversEntireTask, setCoversEntireTask] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function restoreLatestReport() {
-      const storedReportId = localStorage.getItem(
-        REPORT_STORAGE_KEY,
-      );
-
-      if (!storedReportId) {
-        setIsRestoringReport(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `/api/boro/robotic-executions/${encodeURIComponent(
-            storedReportId,
-          )}`,
-          {
-            method: "GET",
-            cache: "no-store",
-          },
-        );
-
-        const data = await readResponse(response);
-        const restoredReport = extractExecutionReport(data);
-
-        if (cancelled) return;
-
-        setReport(restoredReport);
-        setReportId(storedReportId);
-        setStage("report");
-      } catch (err) {
-        if (cancelled) return;
-
-        localStorage.removeItem(REPORT_STORAGE_KEY);
-
-        setError(
-          err instanceof Error
-            ? `Could not restore the previous report: ${err.message}`
-            : "Could not restore the previous report.",
-        );
-      } finally {
-        if (!cancelled) {
-          setIsRestoringReport(false);
-        }
-      }
-    }
-
-    restoreLatestReport();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     return () => {
@@ -314,8 +255,6 @@ export default function NewVerificationPage() {
     setVideoHeight(0);
     setCoversEntireTask(false);
     setStage("upload");
-
-    localStorage.removeItem(REPORT_STORAGE_KEY);
 
     if (videoUrl) {
       URL.revokeObjectURL(videoUrl);
@@ -600,15 +539,7 @@ export default function NewVerificationPage() {
           ? data.report_id
           : null;
 
-      if (returnedReportId) {
-        localStorage.setItem(
-          REPORT_STORAGE_KEY,
-          returnedReportId,
-        );
-
-        setReportId(returnedReportId);
-      }
-
+      setReportId(returnedReportId);
       setReport(reportData);
       setStage("report");
     } catch (err) {
@@ -623,8 +554,6 @@ export default function NewVerificationPage() {
   }
 
   function startNewVerification() {
-    localStorage.removeItem(REPORT_STORAGE_KEY);
-
     setReport(null);
     setReportId(null);
     setInterpretation(null);
@@ -667,20 +596,6 @@ export default function NewVerificationPage() {
         )?.description;
 
   const verdict = report?.overview?.verdict ?? "";
-
-  if (isRestoringReport) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-        <LoaderCircle
-          size={28}
-          className="animate-spin text-[#b8f36b]"
-        />
-        <p className="mt-5 text-[12px] text-[#929588]">
-          Checking for a previous execution report...
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-[1120px] space-y-10">

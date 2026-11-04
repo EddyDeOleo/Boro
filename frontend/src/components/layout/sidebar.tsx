@@ -19,26 +19,26 @@ interface SidebarProps {
 
 const navigation = [
   {
-    label: "Workspace",
-    href: "/",
-    icon: LayoutDashboard,
-  },
-  {
     label: "New verification",
     href: "/verification/new",
     icon: Plus,
+    primary: true,
+  },
+  {
+    label: "Workspace",
+    href: "/",
+    icon: LayoutDashboard,
+    primary: false,
   },
   {
     label: "Execution history",
     href: "/verifications",
     icon: ScanSearch,
+    primary: false,
   },
 ];
 
-export function Sidebar({
-  mobileOpen,
-  onClose,
-}: SidebarProps) {
+export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -80,6 +80,7 @@ export function Sidebar({
               <div className="text-[16px] font-bold tracking-[0.2em] text-[#f0f0e9]">
                 BORO
               </div>
+
               <div className="mt-1 text-[8px] font-medium tracking-[0.15em] text-[#777d70]">
                 ROBOTIC EXECUTION
               </div>
@@ -98,12 +99,13 @@ export function Sidebar({
 
         <div className="px-4 pt-9">
           <p className="mb-3 px-3 text-[9px] font-semibold tracking-[0.18em] text-[#666d60]">
-            WORKSPACE
+            NAVIGATION
           </p>
 
-          <nav className="space-y-1">
+          <nav className="space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon;
+
               const isActive =
                 item.href === "/"
                   ? pathname === "/"
@@ -115,11 +117,23 @@ export function Sidebar({
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className="sidebar-link rounded-md"
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-3",
+                    "text-[11px] transition-colors duration-150",
+                    item.primary
+                      ? "border border-[#b8f36b]/30 bg-[#b8f36b] font-semibold !text-black hover:bg-[#c7ff80] [&_svg]:!text-black"
+                      : "font-medium text-[#929588] hover:bg-[#1d2119] hover:text-[#f0f0e9]",
+                    !item.primary &&
+                      isActive &&
+                      "bg-[#1d2119] text-[#b8f36b]",
+                  )}
                   data-active={isActive}
                 >
-                  <Icon size={16} strokeWidth={1.7} />
+                  <Icon size={16} strokeWidth={1.8} />
                   <span>{item.label}</span>
+                  {item.primary && (
+                    <ArrowUpRight size={13} className="ml-auto" />
+                  )}
                 </Link>
               );
             })}
@@ -137,22 +151,13 @@ export function Sidebar({
 
           <div className="mt-5 flex items-center justify-between border-t border-[#20241d] pt-4">
             <span className="text-[9px] tracking-wide text-[#666d60]">
-              PRODUCT
+              PRODUCT VERSION
             </span>
+
             <span className="font-mono text-[9px] text-[#929588]">
               0.1.0
             </span>
           </div>
-
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noreferrer"
-            className="mt-4 inline-flex items-center gap-2 text-[10px] text-[#777d70] transition-colors hover:text-[#f0f0e9]"
-          >
-            Development
-            <ArrowUpRight size={12} />
-          </a>
         </div>
       </aside>
     </>

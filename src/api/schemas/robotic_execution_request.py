@@ -47,24 +47,29 @@ class RoleRegionRequest(APIRequestModel):
                 )
 
         return self
-
+    
     def to_domain(self, region_id: str) -> RegionDefinition:
         """Convert the request into a domain region."""
+
+        polygon = [
+            (point.x, point.y)
+            for point in self.polygon
+        ]
+
+        # Remove the closing vertex if it duplicates the first vertex.
+        if len(polygon) > 1 and polygon[0] == polygon[-1]:
+            polygon.pop()
 
         return RegionDefinition(
             region_id=region_id,
             name=self.name,
             region_type=self.region_type,
-            polygon=tuple(
-                (point.x, point.y)
-                for point in self.polygon
-            ),
+            polygon=tuple(polygon),
             frame_width=self.frame_width,
             frame_height=self.frame_height,
             reference_frame=self.reference_frame,
             coordinate_system=self.coordinate_system,
         )
-
 
 class RoboticExecutionRequest(APIRequestModel):
     """Integrated robotic execution request."""

@@ -17,7 +17,10 @@ from src.models.evidence import (
     Evidence,
     SpatialRelationship,
 )
-from src.models.observation_context import ObservationContext
+from src.models.observation_context import (
+    CoverageScope,
+    ObservationContext,
+)
 from src.models.region import RegionObservation, RegionRelation
 from src.models.task_roles import TaskRoles
 
@@ -92,7 +95,7 @@ class EventDetector:
             )
         )
         events.extend(
-            self._detect_region_entry(prepared, task_roles)
+            self._detect_region_entry(prepared, task_roles, context)
         )
         events.extend(
             self._detect_stable_placement(prepared, task_roles)
@@ -1126,6 +1129,7 @@ class EventDetector:
         self,
         prepared: _PreparedObservations,
         task_roles: TaskRoles,
+        context: ObservationContext,
     ) -> list[TemporalEvent]:
         if not (
             task_roles.has_entity_role("object")
@@ -1220,7 +1224,127 @@ class EventDetector:
 
                 index = confirmation_end + 1
 
+        if events:
+            return events
+
+        absence_event = self._build_region_entry_absence_event(
+            object_id=object_id,
+            region_id=region_id,
+            region_observations=region_observations,
+            entity_observations=prepared.entity_observations.get(
+                object_id,
+                (),
+            ),
+            context=context,
+        )
+
+        if absence_event is not None:
+            events.append(absence_event)
+
         return events
+
+
+
+
+    def _build_region_entry_absence_event(
+        self,
+        object_id: str,
+        region_id: str,
+        region_observations: Sequence[RegionObservation],
+        entity_observations: Sequence[EntityObservation],
+        context: ObservationContext,
+    ) -> TemporalEvent | None:
+        """Build a negative region-entry event only with complete evidence."""
+
+        if (
+            context.coverage_scope != CoverageScope.COMPLETE_TASK
+            or not context.covers_entire_video
+        ):
+            return None
+
+        expected_frames = set(
+            range(context.frame_start, context.frame_end + 1)
+        )
+
+        entity_by_frame = {
+            item.frame_index: item
+            for item in entity_observations
+        }
+
+        region_by_frame = {
+            item.frame_index: item
+            for item in region_observations
+        }
+
+        if (
+            set(entity_by_frame) != expected_frames
+            or set(region_by_frame) != expected_frames
+        ):
+            return None
+
+        if any(
+            item.relation != RegionRelation.OUTSIDE
+            or item.overlap_ratio is None
+            for item in region_by_frame.values()
+        ):
+            return None
+
+        ordered_entities = tuple(
+            entity_by_frame[frame]
+            for frame in sorted(expected_frames)
+        )
+
+        event_id = (
+            f"REGION_ENTRY_NOT_DETECTED:{object_id}:"
+            f"{region_id}:{context.frame_start}:{context.frame_end}"
+        )
+
+        evidence = Evidence(
+            evidence_id=f"evidence:{event_id}",
+            evidence_type="OBSERVABILITY_CONFIRMED",
+            description=(
+                "The object was continuously observed in every frame "
+                "of the complete video, and every corresponding region "
+                "observation classified it as outside the target region."
+            ),
+            frame_start=context.frame_start,
+            frame_end=context.frame_end,
+            observation_ids=tuple(
+                item.observation_id
+                for item in ordered_entities
+            ),
+            entity_ids=(object_id,),
+            metrics={
+                "observed_frame_count": len(expected_frames),
+                "expected_frame_count": context.frame_count,
+                "outside_frame_count": len(region_by_frame),
+                "region_id": region_id,
+            },
+            limitations=(
+                "The assessment depends on the completeness and accuracy "
+                "of the visual tracking and segmentation observations.",
+                "Image-space region exclusion does not establish the "
+                "object's physical three-dimensional position.",
+            ),
+        )
+
+        return TemporalEvent(
+            event_id=event_id,
+            event_type="REGION_ENTRY",
+            status=EventStatus.NOT_DETECTED,
+            frame_start=context.frame_start,
+            frame_end=context.frame_end,
+            timestamp_start=context.start_time_seconds,
+            timestamp_end=context.end_time_seconds,
+            entity_ids=(object_id,),
+            confidence=None,
+            evidence=(evidence,),
+            attributes={
+                "assessment": "COMPLETE_INTERVAL_OUTSIDE_TARGET",
+                "region_id": region_id,
+            },
+        )
+
 
     def _build_region_entry_event(
         self,
